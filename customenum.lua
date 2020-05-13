@@ -115,6 +115,20 @@ function enum_methods.TryParse(self, value, ignore_case)
 	return success, ret;
 end;
 
+function enum_methods.Parse(self, value, ignore_case)
+	if value == "GetHexAddress" then
+		return nil;
+	end;
+	local ret;
+	for name, val in next, proxy_data[self] do
+		if value == name or (ignore_case and value:lower() == name:lower()) then
+			ret = val;
+			break;
+		end;
+	end;
+	return ret;
+end;
+
 function enum_methods.GetHexAddress(self)
 	return proxy_data[self].GetHexAddress;
 end;
@@ -134,8 +148,10 @@ end;
 
 function enum_methods.GetName(self, value)
 	for name, val in next, proxy_data[self] do
-		if value == val or value == proxy_data[val].value then
-			return name;
+		if name ~= "GetHexAddress" then
+			if value == val or value == proxy_data[val].value then
+				return name;
+			end;
 		end;
 	end;
 	return nil;
@@ -227,7 +243,6 @@ local function new(self, tbl, ...)
 		end;
 		error("customenum does not contain a definition for '" .. index .. "'");
 	end;
-	
 	getmetatable(proxy).__newindex = function(self, index, value)
 		if index == "Extensions" then
 			enum_extensions(self, value);
@@ -235,11 +250,19 @@ local function new(self, tbl, ...)
 			error("Property or indexer 'customenum." .. index .. "' cannot be assigned to -- it is read only", 2);
 		end;
 	end;
-	
 	getmetatable(proxy).__tostring = function()
 		return "customenum: " .. addr;
 	end;
-	
+	getmetatable(proxy).__call = function(self, value)
+		for name, val in next, proxy_data[self] do
+			if name ~= "GetHexAddress" then
+				if value == val or value == proxy_data[val].value then
+					return val;
+				end;
+			end;
+		end;
+		return nil;
+	end;
 	getmetatable(proxy).__metatable = "The metatable is locked";
 	
 	local i = 0;
